@@ -1,0 +1,4 @@
+# Plan helper
+
+### Link to plan
+https://wzr.ug.edu.pl/.csv/plan_st.php?f1=N22-32&f2=4&jp=cf4f962e1fd3c99dd511843f647d568fb7957663
