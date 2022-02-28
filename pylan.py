@@ -1,8 +1,9 @@
-from datetime import datetime, date, timedelta
-from typing import List, Dict, Optional, Callable, Iterable
+from datetime import datetime, timedelta
+from typing import Callable, Dict, Generator, Optional
 from io import StringIO
 from csv import DictReader
 
+import requests
 from requests_cache import CachedSession
 from rich.console import Console
 from rich.table import Table
@@ -15,28 +16,39 @@ URL = ("https://wzr.ug.edu.pl/.csv/plan_st.php?f1=N22-32"
 
 class PlanExplorer:
     Unit = Dict[str, str]
-    Plan = Iterable[Unit]
+    Plan = Generator[Unit, None, None]
 
     def __init__(self, url: str, use_cache: bool = False):
         if use_cache:
-            self.session = self.create_session()
+            self.session = self._create_session()
             response = self.session.get(url)
-
         else:
-            import requests
             response = requests.get(url)
 
+        print(type(response))
         if response.status_code != 200:
             return None
 
         self.data = self._process_data(response)
 
-    def _process_data(self, response) -> Plan:
+    def _process_data(self, response: requests.Response) -> Plan:
         reader = DictReader(StringIO(response.text))
-        return (self.process_unit(unit) for unit in reader)
+
+        # TODO: make squashing real
+        return map(self._process_unit, reader)
 
     @staticmethod
-    def create_session() -> CachedSession:
+    def _process_unit(unit) -> Unit:
+        # "%m/%d/%Y %H.%M"
+        return {
+            "sub": unit['Subject'],
+            "date": unit['Start Date'],
+            "time": f"{unit['Start Time']} - {unit['End Time']}",
+            "loc": unit["Location"].split(",", 1)[0]
+        }
+
+    @staticmethod
+    def _create_session() -> CachedSession:
         return CachedSession(
             "simple_cache",
             use_cache_dir=True,  # Save files in the default user cache dir
@@ -55,22 +67,9 @@ class PlanExplorer:
             stale_if_error=True,  # In case of request errors, use stale cache data if possible
         )
 
-    @staticmethod
-    def process_unit(unit) -> Unit:
-        # "%m/%d/%Y %H.%M"
-        return {
-            "sub": unit['Subject'],
-            "date": unit['Start Date'],
-            "time": f"{unit['Start Time']} - {unit['End Time']}",
-            "loc": unit["Location"].split(",", 1)[0]
-        }
-
     def present(self, filtering: Optional[Callable] = None) -> None:
         console = Console()
         table = Table(show_header=True)  # header_style
-
-        for header in ["Subject", "Date", "Time", "Location"]:
-            table.add_column(header)
 
         # filtering part
         if filtering:
@@ -78,6 +77,14 @@ class PlanExplorer:
         else:
             data = self.data
 
+        first = next(data)
+
+        # Adding headers
+        for header in ["Subject", "Date", "Time", "Location"]:
+            table.add_column(header)
+
+        # Adding data
+        table.add_row(*first.values())
         for row in data:
             table.add_row(*row.values())
 
@@ -85,6 +92,7 @@ class PlanExplorer:
 
 
 if __name__ == "__main__":
+    # TOOD: add CLI handler
     plan = PlanExplorer(URL)
     plan.present(
         lambda u: u['date'].split()[0] == "03/12/2022"
