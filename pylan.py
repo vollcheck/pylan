@@ -1,3 +1,4 @@
+import argparse
 from datetime import datetime, timedelta
 from typing import Callable, Dict, Generator, Optional
 from io import StringIO
@@ -6,7 +7,7 @@ from csv import DictReader
 import requests
 from requests_cache import CachedSession
 from rich.console import Console
-from rich.table import Table
+from rich.table import Table, Column
 
 
 # Constants
@@ -25,8 +26,9 @@ class PlanExplorer:
         else:
             response = requests.get(url)
 
-        print(type(response))
         if response.status_code != 200:
+            # TODO: make your own Error
+            print("Have no connection!")
             return None
 
         self.data = self._process_data(response)
@@ -35,7 +37,7 @@ class PlanExplorer:
         reader = DictReader(StringIO(response.text))
 
         # TODO: make squashing real
-        return map(self._process_unit, reader)
+        return [self._process_unit(u) for u in reader]
 
     @staticmethod
     def _process_unit(unit) -> Unit:
@@ -69,22 +71,20 @@ class PlanExplorer:
 
     def present(self, filtering: Optional[Callable] = None) -> None:
         console = Console()
-        table = Table(show_header=True)  # header_style
+        table = Table(
+            "Subject",
+            "Date",
+            "Time",
+            Column(header="Location", justify="center")
+        )
 
         # filtering part
         if filtering:
-            data = (u for u in self.data if filtering(u))
+            data = [u for u in self.data if filtering(u)]
         else:
             data = self.data
 
-        first = next(data)
-
-        # Adding headers
-        for header in ["Subject", "Date", "Time", "Location"]:
-            table.add_column(header)
-
         # Adding data
-        table.add_row(*first.values())
         for row in data:
             table.add_row(*row.values())
 
@@ -92,8 +92,13 @@ class PlanExplorer:
 
 
 if __name__ == "__main__":
-    # TOOD: add CLI handler
-    plan = PlanExplorer(URL)
-    plan.present(
-        lambda u: u['date'].split()[0] == "03/12/2022"
+    parser = argparse.ArgumentParser(description='UG plan downloader.')
+    parser.add_argument(
+        '--filter-by', dest='column', type=str, help='filter by the exact column'
     )
+
+    args = parser.parse_args()
+    print(args.column)
+    plan = PlanExplorer(URL)
+    # plan.present()
+    # lambda u: u['date'].split()[0] == "03/12/2022"
