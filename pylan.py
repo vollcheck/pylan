@@ -6,6 +6,7 @@ from csv import DictReader
 
 import requests
 from requests_cache import CachedSession
+from rich import print as rprint
 from rich.console import Console
 from rich.table import Table, Column
 
@@ -13,6 +14,10 @@ from rich.table import Table, Column
 # Constants
 URL = ("https://wzr.ug.edu.pl/.csv/plan_st.php?f1=N22-32"
        "&f2=4&jp=cf4f962e1fd3c99dd511843f647d568fb7957663")
+
+
+def print_error(msg: str) -> None:
+    rprint(f"[bold red]{msg}[/bold red]")
 
 
 class PlanExplorer:
@@ -27,27 +32,51 @@ class PlanExplorer:
             response = requests.get(url)
 
         if response.status_code != 200:
-            # TODO: make your own Error
-            print("Have no connection!")
-            return None
+            message = "No connection!"
+            print_error(message)
+            raise Exception(message)
 
         self.data = self._process_data(response)
-
-    def _process_data(self, response: requests.Response) -> Plan:
-        reader = DictReader(StringIO(response.text))
-
-        # TODO: make squashing real
-        return [self._process_unit(u) for u in reader]
+        self.data = self._squash_rows()
 
     @staticmethod
-    def _process_unit(unit) -> Unit:
+    def _process_unit(unit: Unit) -> Unit:
         # "%m/%d/%Y %H.%M"
         return {
             "sub": unit['Subject'],
             "date": unit['Start Date'],
-            "time": f"{unit['Start Time']} - {unit['End Time']}",
+            "stime": unit['Start Time'],
+            "etime": unit['End Time'],
             "loc": unit["Location"].split(",", 1)[0]
         }
+
+    def _process_data(self, response: requests.Response) -> Plan:
+        reader = DictReader(StringIO(response.text))
+        return [self._process_unit(u) for u in reader]
+
+    def _squash_rows(self):
+        result = []
+        prev = None
+
+        for row in self.data:
+            if (
+                prev
+                and prev['date'] == row['date']
+                and prev['sub'] == row['sub']
+            ):
+                last_r = result.pop() if result else row
+                print("merged", last_r['sub'], last_r['etime'], row['etime'])
+                last_r['etime'] = row['etime']
+                result.append(last_r)
+
+            else:
+                result.append(row)
+
+            prev = row
+
+        return result
+
+
 
     @staticmethod
     def _create_session() -> CachedSession:
@@ -74,11 +103,12 @@ class PlanExplorer:
         table = Table(
             "Subject",
             "Date",
-            "Time",
+            "Start Time",
+            "End Time",
             Column(header="Location", justify="center")
         )
 
-        # filtering part
+        # TODO: filtering part
         if filtering:
             data = [u for u in self.data if filtering(u)]
         else:
@@ -98,7 +128,11 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    print(args.column)
+    if not args.column:
+        print_error("You passed no args!")
+
+    print(args.column)  # for testing
+
     plan = PlanExplorer(URL)
-    # plan.present()
     # lambda u: u['date'].split()[0] == "03/12/2022"
+    plan.present()
