@@ -1,6 +1,6 @@
 import argparse
-from datetime import date, timedelta
-from typing import Callable, Dict, Generator, Optional
+from datetime import date, datetime, timedelta
+from typing import Dict, List
 from io import StringIO
 from csv import DictReader
 
@@ -22,7 +22,7 @@ def print_error(msg: str) -> None:
 
 class PlanExplorer:
     Unit = Dict[str, str]
-    Plan = Generator[Unit, None, None]
+    Plan = List[Unit]
 
     def __init__(self, url: str, use_cache: bool = False):
         if use_cache:
@@ -40,16 +40,29 @@ class PlanExplorer:
         self.data = self._squash_rows()
 
     @staticmethod
-    def _swap_date(d: str) -> str:
-        # That could be achieved using 'date' objects, but I'm too lazy...
-        d = d.split("/")
-        d = d[1], d[0], d[2]
-        return "/".join(d)
+    def _create_session() -> CachedSession:
+        return CachedSession(
+            "simple_cache",
+            use_cache_dir=True,  # Save files in the default user cache dir
+            cache_control=True,  # Use Cache-Control headers for expiration, if available
+            expire_after=timedelta(days=3),  # Otherwise expire responses after one day
+            allowable_methods=[
+                "GET",
+                "POST",
+            ],  # Cache POST requests to avoid sending the same data twice
+            allowable_codes=[
+                200,
+                400,
+            ],  # Cache 400 responses as a solemn reminder of your failures
+            # ignored_parameters=["api_key"],  # Don't match this param or save it in the cache
+            match_headers=True,  # Match all request headers
+            stale_if_error=True,  # In case of request errors, use stale cache data if possible
+        )
 
     def _process_unit(self, unit: Unit) -> Unit:
         return {
             "sub": unit['Subject'],
-            "date": self._swap_date(unit['Start Date']),
+            "date": datetime.strptime(unit['Start Date'], "%m/%d/%Y").strftime("%d/%m/%Y"),
             "stime": unit['Start Time'],
             "etime": unit['End Time'],
             "loc": unit["Location"].split(",", 1)[0]
@@ -81,24 +94,25 @@ class PlanExplorer:
         return result
 
     @staticmethod
-    def _create_session() -> CachedSession:
-        return CachedSession(
-            "simple_cache",
-            use_cache_dir=True,  # Save files in the default user cache dir
-            cache_control=True,  # Use Cache-Control headers for expiration, if available
-            expire_after=timedelta(days=3),  # Otherwise expire responses after one day
-            allowable_methods=[
-                "GET",
-                "POST",
-            ],  # Cache POST requests to avoid sending the same data twice
-            allowable_codes=[
-                200,
-                400,
-            ],  # Cache 400 responses as a solemn reminder of your failures
-            # ignored_parameters=["api_key"],  # Don't match this param or save it in the cache
-            match_headers=True,  # Match all request headers
-            stale_if_error=True,  # In case of request errors, use stale cache data if possible
-        )
+    def get_next_weekend(plan: Plan) -> Plan:
+        today = date.today()
+        dates: List[str] = [d["date"] for d in plan]
+
+        processed_dates: List[date] = [
+            datetime.strptime(d, "%d/%m/%Y").date() for d in dates
+        ]
+
+        deltas: List[timedelta] = [d - today for d in processed_dates]
+
+        min_delta = min(deltas)  # closest weekend (Saturday)
+        min_delta_inc = min(deltas) + timedelta(days=1) # closest weekend (Sunday)
+
+        next_weekend_dates: List[timedelta] = [
+            d for d in deltas if d == min_delta or d == min_delta_inc
+        ]
+        next_dates = set(dates[:len(next_weekend_dates)])
+
+        return [d for d in plan if d["date"] in next_dates]
 
     def present(self, args: argparse.Namespace = None) -> None:
         console = Console()
@@ -115,7 +129,7 @@ class PlanExplorer:
             if args.subject:
                 data = [d for d in self.data if args.subject in d['sub'].lower()]
             if args.next_week:
-                data = [] # filter by date
+                data = self.get_next_weekend(data)
 
         # Adding data
         for row in data:
@@ -130,8 +144,8 @@ if __name__ == "__main__":
         "-s", "--subject", dest='subject', type=str, help='filter by the name of subject'
     )
     parser.add_argument(
-        "-n", "--next", dest='next_week', type=str, help='show the plan for next week'
-    )
+        "-n", "--next", dest='next_week', type=bool, help='show the plan for next week'
+    )  # TODO: make a flag out of it
 
     args = parser.parse_args()
 
