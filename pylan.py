@@ -41,6 +41,7 @@ class PlanExplorer:
 
     @staticmethod
     def _swap_date(d: str) -> str:
+        # That could be achieved using 'date' objects, but I'm too lazy...
         d = d.split("/")
         d = d[1], d[0], d[2]
         return "/".join(d)
@@ -48,7 +49,7 @@ class PlanExplorer:
     def _process_unit(self, unit: Unit) -> Unit:
         return {
             "sub": unit['Subject'],
-            "date": self.swap_date(unit['Start Date']),
+            "date": self._swap_date(unit['Start Date']),
             "stime": unit['Start Time'],
             "etime": unit['End Time'],
             "loc": unit["Location"].split(",", 1)[0]
@@ -79,8 +80,6 @@ class PlanExplorer:
 
         return result
 
-
-
     @staticmethod
     def _create_session() -> CachedSession:
         return CachedSession(
@@ -101,7 +100,7 @@ class PlanExplorer:
             stale_if_error=True,  # In case of request errors, use stale cache data if possible
         )
 
-    def present(self, filtering: Optional[Callable] = None) -> None:
+    def present(self, args: argparse.Namespace = None) -> None:
         console = Console()
         table = Table(
             "Subject",
@@ -111,11 +110,12 @@ class PlanExplorer:
             Column(header="Location", justify="center")
         )
 
-        # TODO: filtering part
-        if filtering:
-            data = [u for u in self.data if filtering(u)]
-        else:
-            data = self.data
+        data = self.data
+        if args:
+            if args.subject:
+                data = [d for d in self.data if args.subject in d['sub'].lower()]
+            if args.next_week:
+                data = [] # filter by date
 
         # Adding data
         for row in data:
@@ -127,15 +127,14 @@ class PlanExplorer:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='UG plan downloader.')
     parser.add_argument(
-        '--filter-by', dest='column', type=str, help='filter by the exact column'
+        "-s", "--subject", dest='subject', type=str, help='filter by the name of subject'
+    )
+    parser.add_argument(
+        "-n", "--next", dest='next_week', type=str, help='show the plan for next week'
     )
 
     args = parser.parse_args()
-    # if not args.column:
-    #     print_error("You passed no args!")
-
-    # print(args.column)  # for testing
 
     plan = PlanExplorer(URL)
-    # lambda u: u['date'].split()[0] == "03/12/2022"
-    plan.present()
+
+    plan.present(args)
