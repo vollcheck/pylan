@@ -1,5 +1,5 @@
 import argparse
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 from typing import Callable, Dict, Generator, Optional
 from io import StringIO
 from csv import DictReader
@@ -40,11 +40,15 @@ class PlanExplorer:
         self.data = self._squash_rows()
 
     @staticmethod
-    def _process_unit(unit: Unit) -> Unit:
-        # "%m/%d/%Y %H.%M"
+    def _swap_date(d: str) -> str:
+        d = d.split("/")
+        d = d[1], d[0], d[2]
+        return "/".join(d)
+
+    def _process_unit(self, unit: Unit) -> Unit:
         return {
             "sub": unit['Subject'],
-            "date": unit['Start Date'],
+            "date": self.swap_date(unit['Start Date']),
             "stime": unit['Start Time'],
             "etime": unit['End Time'],
             "loc": unit["Location"].split(",", 1)[0]
