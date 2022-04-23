@@ -65,7 +65,6 @@ class PlanExplorer:
                 and prev['sub'] == row['sub']
             ):
                 last_r = result.pop() if result else row
-                print("merged", last_r['sub'], last_r['etime'], row['etime'])
                 last_r['etime'] = row['etime']
                 result.append(last_r)
 
@@ -128,10 +127,10 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    if not args.column:
-        print_error("You passed no args!")
+    # if not args.column:
+    #     print_error("You passed no args!")
 
-    print(args.column)  # for testing
+    # print(args.column)  # for testing
 
     plan = PlanExplorer(URL)
     # lambda u: u['date'].split()[0] == "03/12/2022"
