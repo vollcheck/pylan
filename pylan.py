@@ -1,6 +1,7 @@
 import argparse
+import sys
 from datetime import date, datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional
 from io import StringIO
 from csv import DictReader
 
@@ -12,19 +13,30 @@ from rich.table import Table, Column
 
 
 # Constants
+
 URL = ("https://wzr.ug.edu.pl/.csv/plan_st.php?f1=N22-32"
        "&f2=4&jp=cf4f962e1fd3c99dd511843f647d568fb7957663")
 
+
+# Types
+
+Unit = Dict[str, str]
+Plan = List[Unit]
+
+
+# Helpers functions
 
 def print_error(msg: str) -> None:
     rprint(f"[bold red]{msg}[/bold red]")
 
 
-class PlanExplorer:
-    Unit = Dict[str, str]
-    Plan = List[Unit]
+# My own exception
+class NetworkException(Exception):
+    pass
 
-    def __init__(self, url: str, use_cache: bool = False):
+
+class PlanExplorer:
+    def __init__(self, url: str, use_cache: bool = True):
         if use_cache:
             self.session = self._create_session()
             response = self.session.get(url)
@@ -34,7 +46,7 @@ class PlanExplorer:
         if response.status_code != 200:
             message = "No connection!"
             print_error(message)
-            raise Exception(message)
+            raise NetworkException(message)
 
         self.data = self._process_data(response)
         self.data = self._squash_rows()
@@ -114,7 +126,28 @@ class PlanExplorer:
 
         return [d for d in plan if d["date"] in next_dates]
 
-    def present(self, args: argparse.Namespace = None) -> None:
+    def prepare_data(self, args: Optional[argparse.Namespace] = None) -> Optional[Plan]:
+        data = self.data
+        if args:
+            if args.subject:
+                data = [d for d in self.data if args.subject in d['sub'].lower()]
+
+            if args.requested_date:
+                # TODO: Validate date? (for now it's just string comparison)
+                data = [d for d in self.data if args.requested_date == d['date'].lower()]
+
+            if args.next:
+                data = self.get_next_weekend(data)
+
+        if not data:
+            rprint(f"[bold orange]Cannot print plan with given options,"
+                   " check your argument parameters.[/bold orange]")
+            return
+
+        return data
+
+
+    def present(self, args: argparse.Namespace = None) -> Optional[int]:
         console = Console()
         table = Table(
             "Subject",
@@ -124,12 +157,9 @@ class PlanExplorer:
             Column(header="Location", justify="center")
         )
 
-        data = self.data
-        if args:
-            if args.subject:
-                data = [d for d in self.data if args.subject in d['sub'].lower()]
-            if args.next_week:
-                data = self.get_next_weekend(data)
+        data = self.prepare_data(args)
+        if not data:
+            return
 
         # Adding data
         for row in data:
@@ -137,18 +167,26 @@ class PlanExplorer:
 
         console.print(table)
 
-
-if __name__ == "__main__":
+def parse_args(args: list) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='UG plan downloader.')
     parser.add_argument(
         "-s", "--subject", dest='subject', type=str, help='filter by the name of subject'
     )
     parser.add_argument(
-        "-n", "--next", dest='next_week', type=bool, help='show the plan for next week'
+        "-d", "--date", dest='requested_date', type=str, help='show the plan for requested date'
+    )
+    parser.add_argument(
+        "-n", "--next", action='store_true', help='show the plan for next week'
     )  # TODO: make a flag out of it
 
-    args = parser.parse_args()
+    return parser.parse_args(args)
 
+
+def main():
     plan = PlanExplorer(URL)
-
+    cli_args = sys.argv[1:] # omit the prog name
+    args = parse_args(cli_args)
     plan.present(args)
+
+if __name__ == "__main__":
+    main()
