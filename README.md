@@ -1,6 +1,26 @@
-# Studies plan assistant
+# Pylan
 
-## Pylan in action:
+## <p align="center" style="text-size:72px">Pylan</p>
+<img src="https://img.shields.io/badge/tests-passed-green.svg" />
+<img src="https://img.shields.io/badge/made%20with-Python-purple.svg" /> 
+<img src="https://img.shields.io/badge/License-MIT-red.svg" />
+           
+<br />
+
+## <p align="center">O aplikacji</p>
+
+Aplikacja Pylan informuje użytkownika o nadchodzącym planie zajęć na Wydziale Zarządzania Uniwersytetu Gdańskiego. Możliwe jest ograniczenie wyszukiwań planu dzięki wgranym w aplikację komendom.
+
+## <p align="center">Uruchomienie</p>
+Aby uruchomić aplikację musimy przygotować wirtualne środowisko Pythona i w nim zainstalować potrzebne biblioteki. Aby to uczynić, musimy wykonać w CMD następujące komendy: 
+
+```
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Po takim przygotowaniu możemy uruchomić aplikację:
 
 ```console
 λ python pylan.py
@@ -28,15 +48,91 @@
 └────────────────────────────────────────────────────┴────────────┴────────────┴──────────┴──────────┘
 ```
 
+## <p align="center">Licencja</p>
+
+Pylan jest open-sourcowym projektem na licencji MIT. Do utworzenia projektu został użyty Python w wersji 3.10 na licencji MIT, biblioteka [requests](https://pypi.org/project/requests/) na licencji Apache Software License (Apache 2.0).
+
+## <p align="center">Autor</p> 
+[Jacek Walczak](https://github.com/vollcheck)<br>
+
+## <p align="center"> Specyfikacja wymagań </p>
+<table>
+  
+  <tr>
+    <th>Definicja wymagania(scenariusz)</th>
+    <td>Użytkownik wyszukuje plan studiów na najbliższy weekend</td>
+  </tr>
+  
+  <tr>
+    <th>Aktorzy</th>
+    <td>Użytkownik chcący wyszukać plan studiów</td>
+  </tr>
+  
+   <tr>
+    <th>Warunki początkowe</th>
+    <td>Użytkownik wykorzystuje konsolę do interakcji z aplikacją</td>
+  </tr>
+   
+  <tr>
+    <th>Przebieg realizacji scenariusza</th>
+    <td>
+      <ul>
+      <li>Użytkownik otwiera konsolę i przechodzi do katalogu zawierającego aplikację `pylan`</li>
+      <li>Dokonuje także wprowadzenia potrzebnych komend dla uzyskania wymaganego wyniku</li>
+      <li>System wyświetla plan zajęć na najbliższy weekend przekazując informacje w tabeli z podziałem na nazwę przedmiotu, czas trwania i lokalizację</li>   
+      </ul>
+    </td>
+  </tr>
+</table>
+<br>
+<b>Wymagania funkcjonalne</b>
+<ul>
+  <li>użytkownik będzie mógł przeszukać plan zajęć na uczelni dla wybranej grupy</li>
+  <li>strona internetowa udostępni plan zajęć w postaci statycznego pliku CSV</li>
+</ul>
+<br>
+<b>Wymagania niefunkcjonalne</b>
+<ul>
+  <li>dostępność/niezawodność - strona powinna być dostępna cały czas</li>
+  <li>wydajność - strona powinna w szybkim czasie zwracać tabelę planu zajęć</li>
+  <li>użyteczność - dzięki użyciu komend w konsoli możliwe jest ograniczenie </li>
+</ul>
+
+## <p align="center">Architektura systemu</p>
+<p align="center"><b>Stos technologiczny - architektura rozwojowa</b></p>
+<ul>
+<li>Emacs (IDE)</li>
+<li>Ekosystem Python 3.10</li>
+</ul>
+
+                                     
+<p align="center">Stos technologiczny - architektura uruchomieniowa</p>
+<ul>
+                    <li>Python 3.10</li>
+                    <li>biblioteki `requests` wraz z `requests-cache` do realizowania połączeń HTTP</li>
+                    <li>biblioteka `click` do tworzenia komend (Command Line Interface)</li>
+                    <li>biblioteka `rich` do TUI (Terminal User Interface)</li>
+                    <li>Git</li>
+</ul>
+                 
+## <p align="center">Testy</p>               
+<ul>
+                 
+<li>Test sprawdzający czy Token został dodany do bazy danych co ma kluczowe znaczenie dla działania całej aplikacji</li>
+                    
+</ul>
+                    
+<img src="https://i.imgur.com/YEMgQDj.png">
+
 ## Pylan API
 
 ### `-h, --help`
 
-Show help message and exit.
+Pokaż komunikat `help` z dostępnymi komendami.
 
 ### `-s SUBJECT, --subject SUBJECT`
 
-Filter by the name of subject. It is possible to give only part of the subject name.
+Pokaż plan dla wybranego przedmiotu. Możliwe podanie jest wyłącznie części nazwy przedmiotu.
 
 ```console
 λ python pylan.py -s rachunkowo
@@ -54,7 +150,7 @@ Filter by the name of subject. It is possible to give only part of the subject n
 
 ### `-d REQUESTED_DATE, --date REQUESTED_DATE`
 
-Show the plan for requested date.
+Pokaż plan dla wybranej daty przekazanej w formacie `dd/mm/yyyy`.
 
 ```console
 λ python pylan.py -d 28/05/2022
@@ -71,10 +167,9 @@ Show the plan for requested date.
 └─────────────────────────────────────┴────────────┴────────────┴──────────┴──────────┘
 ```
 
-
 ### `-n, --next`
 
-Show the plan for the next weekend.
+Pokaż plan na najbliższy weekend.
 
 ```console
 λ python pylan.py -n
@@ -94,12 +189,7 @@ Show the plan for the next weekend.
 └─────────────────────────────────────────────┴────────────┴────────────┴──────────┴──────────┘
 ```
 
-## Link used:
+## Użyty Link do planu:
 https://wzr.ug.edu.pl/.csv/plan_st.php?f1=N22-32&f2=4&jp=cf4f962e1fd3c99dd511843f647d568fb7957663
 
-Probably you are able to discover more plans from the given link, just tweak with the query parameters.
-
-## Possible room for improvement:
-
-- [ ] validate date that comes with `requested_date` opt
-- [ ] allow to show the completed plan
+Możliwe jest użycie innego planu, wystarczy zmienić link do planu w pliku `link_plan.txt`.

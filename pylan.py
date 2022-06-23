@@ -14,6 +14,8 @@ from rich.table import Table, Column
 
 # Constants
 
+
+
 URL = ("https://wzr.ug.edu.pl/.csv/plan_st.php?f1=N22-32"
        "&f2=4&jp=cf4f962e1fd3c99dd511843f647d568fb7957663")
 
@@ -25,6 +27,11 @@ Plan = List[Unit]
 
 
 # Helpers functions
+
+def read_url() -> str:
+    with open("plan_link.txt", 'r') as f:
+        return f.readline()
+
 
 def print_error(msg: str) -> None:
     rprint(f"[bold red]{msg}[/bold red]")
@@ -183,6 +190,7 @@ def parse_args(args: list) -> argparse.Namespace:
 
 
 def main():
+    url = read_url()
     plan = PlanExplorer(URL)
     cli_args = sys.argv[1:] # omit the prog name
     args = parse_args(cli_args)
