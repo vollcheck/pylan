@@ -1,9 +1,6 @@
 # Pylan
 
-## <p align="center" style="text-size:72px">Pylan</p>
-<img src="https://img.shields.io/badge/tests-passed-green.svg" />
-<img src="https://img.shields.io/badge/made%20with-Python-purple.svg" /> 
-<img src="https://img.shields.io/badge/License-MIT-red.svg" />
+<img src="https://img.shields.io/badge/tests-passed-green.svg" /> <img src="https://img.shields.io/badge/made%20with-Python-purple.svg" /> <img src="https://img.shields.io/badge/License-MIT-red.svg" />
            
 <br />
 
@@ -116,13 +113,8 @@ Pylan jest open-sourcowym projektem na licencji MIT. Do utworzenia projektu zost
 </ul>
                  
 ## <p align="center">Testy</p>               
-<ul>
                  
-<li>Test sprawdzający czy Token został dodany do bazy danych co ma kluczowe znaczenie dla działania całej aplikacji</li>
-                    
-</ul>
-                    
-<img src="https://i.imgur.com/YEMgQDj.png">
+Testy sprawdzają, czy przetwarzanie planu wedle podanych przez użytkownika komend działają. Testy są także stworzone w sposób, który pozwala na sprawdzenie, czy plan jest pobierany z cache (pamięci podręcznej), czy działa bez interetu lub czy poprawnie wyświetla się najbliższy weekend.
 
 ## Pylan API
 

@@ -30,7 +30,6 @@ class TestPylan(unittest.TestCase):
 
     def test_normal_execution_with_no_additional_flags(self):
         # Works only if there's internet connection.
-        # Should I use mocked response here?
         assert self.plan.prepare_data() == f.normal_evaluation
 
     def test_wrong_subject_parameter(self):
